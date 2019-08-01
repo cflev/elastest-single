@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: 2019-07-26T22:47:43Z
+  labels:
+    chart: edm-cerebro-0.0.1
+  name: edm-cerebro
+  namespace: default
+  resourceVersion: "1080561"
+  selfLink: /api/v1/namespaces/default/services/edm-cerebro
+  uid: 61033fd9-aff7-11e9-a189-42010a9a00e0
+spec:
+  clusterIP: 10.0.5.14
+  ports:
+  - name: http
+    port: 8088
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: edm-cerebro
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

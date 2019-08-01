@@ -1,0 +1,134 @@
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: edm-hadoop-yarn-nm
+spec:
+  serviceName: edm-hadoop-yarn-nm
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        elastest-service: hadoop-yarn-nm
+    spec:
+      containers:
+      - name: yarn-nm
+        image: "danisla/hadoop:2.9.0"
+        ports:
+        - containerPort: 8088
+          name: web
+        command:
+           - "/bin/bash"
+           - "/tmp/hadoop-config/bootstrap.sh"
+           - "-d"
+        readinessProbe:
+          httpGet:
+            path: /node
+            port: 8042
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /node
+            port: 8042
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        volumeMounts:
+        - name: hadoop-config
+          mountPath: /tmp/hadoop-config
+      volumes:
+      - name: hadoop-config
+        configMap:
+          name: edm-hadoop
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm-hadoop-yarn-nm
+spec:
+  ports:
+  - port: 8088
+    name: web
+  - port: 8082
+    name: web2
+  - port: 8042
+    name: api
+  clusterIP: None
+  selector:
+    elastest-service: hadoop-yarn-nm
+
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: edm-hadoop-yarn-rm
+spec:
+  serviceName: edm-hadoop-yarn-rm
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        elastest-service: hadoop-yarn-rm
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: yarn-rm
+        image: "danisla/hadoop:2.9.0"
+        ports:
+        - containerPort: 8088
+          name: web
+        command:
+           - "/bin/bash"
+           - "/tmp/hadoop-config/bootstrap.sh"
+           - "-d"
+        readinessProbe:
+          httpGet:
+            path: /ws/v1/cluster/info
+            port: 8088
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /ws/v1/cluster/info
+            port: 8088
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        volumeMounts:
+        - name: hadoop-config
+          mountPath: /tmp/hadoop-config
+      volumes:
+      - name: hadoop-config
+        configMap:
+          name: edm-hadoop
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm-hadoop-yarn-rm
+spec:
+  ports:
+  - port: 8088
+    name: web
+  clusterIP: None
+  selector:
+    elastest-service: hadoop-yarn-rm
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm-hadoop-yarn-ui
+  labels:
+spec:
+  ports:
+  - port: 8088
+    name: web
+  selector:
+    elastest-service: hadoop-yarn-rm
+  type: ClusterIP

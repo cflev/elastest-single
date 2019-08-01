@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sparkmaster
+spec:
+  ports:
+  - name: "8080"
+    port: 8080
+    targetPort: 8080
+  - name: "7077"
+    port: 7077
+    targetPort: 7077
+  type: LoadBalancer
+  selector:
+    elastest-service: sparkmaster
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ebs-sparkmaster
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        elastest-service: sparkmaster
+    spec:
+      containers:
+      - image: elastest/ebs-spark:latest
+        command: ["/usr/bin/supervisord","--configuration=/opt/conf/master.conf"]
+        name: ebs-sparkmaster

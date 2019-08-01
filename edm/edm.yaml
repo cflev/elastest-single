@@ -1,0 +1,30 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: edm
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        elastest-service: edm
+    spec:
+      containers:
+      - image: elastest/edm:latest
+        command: ["/bin/bash","-c","wget -O /edm.tar https://github.com/cflev/elastest/raw/master/k8s-elatest/edm/rest-java/edm.tar && cd / && tar xvf /edm.tar && rm /edm.tar && cd && catalina.sh run"]
+        name: edm
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm
+spec:
+  ports:
+  - name: "8000"
+    port: 8000
+    targetPort: 8080
+  selector:
+    elastest-service: edm
+  type: ClusterIP

@@ -1,0 +1,198 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  edm-alluxio-config
+data:
+    ALLUXIO_CONFIG: |
+
+      ALLUXIO_MASTER_HOSTNAME=edm-alluxio-master
+      ALLUXIO_MASTER_JOURNAL_FOLDER=/journal
+      ALLUXIO_UNDERFS_ADDRESS=hdfs://edm-hdfs-nodename:9000
+      ALLUXIO_WORKER_DATA_SERVER_DOMAIN_SOCKET_ADDRESS=/opt/domain/d
+      ALLUXIO_WORKER_MEMORY_SIZE=1GB
+
+      ALLUXIO_MASTER_PORT=19998
+      ALLUXIO_MASTER_WEB_PORT=19999
+      ALLUXIO_WORKER_PORT=29998
+      ALLUXIO_WORKER_DATA_PORT=29999
+      ALLUXIO_WORKER_WEB_PORT=29996
+
+      # If using S3A
+      # AWS_ACCESSKEYID=<s3a_access_key>
+      # AWS_SECRETKEY=<s3a_secret_key>
+
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: edm-edm-alluxio-journal-volume
+  labels:
+    type: local
+spec:
+#  storageClassName: standard
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/tmp/data"
+
+#---
+#apiVersion: v1
+#kind: PersistentVolume
+#metadata:
+#  name: "alluxio-nfs-volume"
+#spec:
+#  capacity:
+#    storage: 1Gi
+#  persistentVolumeReclaimPolicy: Retain
+#  accessModes:
+#    - ReadWriteMany
+#  nfs:
+#    server: "10.97.8.242"
+#    path: "/"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm-alluxio-master
+  labels:
+    app: edm-alluxio
+spec:
+  ports:
+  - port: 19998
+    name: rpc
+  - port: 19999
+    name: web
+  clusterIP: None
+  selector:
+    app: edm-alluxio-master
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: edm-alluxio-pv-claim
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: edm-alluxio-master
+spec:
+  selector:
+    matchLabels:
+      app: edm-alluxio-master
+  serviceName: "edm-alluxio-master"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: edm-alluxio-master
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: edm-alluxio-master
+          image: alluxio/alluxio:1.7.1
+          resources:
+            requests:
+              cpu: "0.5"
+              memory: "256M"
+            limits:
+              cpu: "1"
+              memory: "1024M"
+          command: ["/entrypoint.sh"]
+          args: ["master"]
+          envFrom:
+          - configMapRef:
+              name: edm-alluxio-config
+          ports:
+          - containerPort: 19998
+            name: rpc
+          - containerPort: 19999
+            name: web
+          volumeMounts:
+            - name: edm-alluxio-journal
+              mountPath: /journal
+            - name: edm-alluxio-domain
+              mountPath: /opt/domain
+      restartPolicy: Always
+      volumes:
+        - name: edm-alluxio-journal
+          persistentVolumeClaim:
+            claimName: edm-alluxio-pv-claim
+        - name: edm-alluxio-domain
+          hostPath:
+            path: /tmp/domain
+            type: Directory
+
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: edm-alluxio-worker
+spec:
+  template:
+    metadata:
+      labels:
+        name: edm-alluxio-worker
+        app: edm-alluxio
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: edm-alluxio-worker
+          image: alluxio/alluxio:1.7.1
+          resources:
+            requests:
+              cpu: "0.5"
+              memory: "2G"
+            limits:
+              cpu: "1"
+              memory: "2G"
+          command: ["/entrypoint.sh"]
+          args: ["worker"]
+          env:
+          - name: ALLUXIO_WORKER_HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          envFrom:
+          - configMapRef:
+              name: edm-alluxio-config
+          ports:
+          - containerPort: 29998
+            name: rpc
+          - containerPort: 29999
+            name: data
+          - containerPort: 29996
+            name: web
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: edm-alluxio-ramdisk
+              mountPath: /dev/shm
+            - name: edm-alluxio-domain
+              mountPath: /opt/domain
+      restartPolicy: Always
+      volumes:
+        - name: edm-alluxio-ramdisk
+          emptyDir:
+            medium: "Memory"
+            sizeLimit: "1G"
+        - name: edm-alluxio-domain
+          hostPath:
+            path: /tmp/domain
+            type: Directory

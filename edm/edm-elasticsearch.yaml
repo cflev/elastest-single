@@ -1,0 +1,101 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: edm-elasticsearch
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        elastest-service: edm-elasticsearch
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+      - env:
+        - name: ES_JAVA_OPTS
+          value: -Xmx1g -Xms1g
+        image: elastest/edm-elasticsearch:latest
+        name: edm-elasticsearch
+        volumeMounts:
+        - mountPath: /backup
+          name: esbackup
+        - mountPath: /usr/share/elasticsearch/data
+          name: esdata
+        - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          name: edm-elasticsearch-config
+          subPath: elasticsearch.yml
+      hostname: edm-elasticsearch
+      volumes:
+      - name: esbackup
+        persistentVolumeClaim:
+          claimName: edm-es-backup
+      - name: esdata
+        persistentVolumeClaim:
+          claimName: edm-es-data
+      - name: edm-elasticsearch-config
+        configMap:
+          name: edm-elasticsearch-config
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  edm-elasticsearch-config
+data:
+    elasticsearch.yml: |
+        ---
+        cluster.name: "edm-elasticsearch"
+        network.host: 0.0.0.0
+        # network.publish_host: "elasticsearch"
+
+        # minimum_master_nodes need to be explicitly set when bound on a public IP
+        # set to 1 to allow single node clusters
+        # Details: https://github.com/elastic/elasticsearch/pull/17288
+        discovery.zen.minimum_master_nodes: 1
+
+        ## Use single node discovery in order to disable production mode and avoid bootstrap checks
+        ## see https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
+        #
+        # discovery.type: zen
+        discovery.type: single-node
+
+        ## Disable X-Pack
+        ## see https://www.elastic.co/guide/en/x-pack/current/xpack-settings.html
+        ##     https://www.elastic.co/guide/en/x-pack/current/installing-xpack.html#xpack-enabling
+        #
+        # xpack.security.enabled: false
+        # xpack.monitoring.enabled: false
+        # xpack.ml.enabled: false
+        # xpack.graph.enabled: false
+        # xpack.watcher.enabled: false
+
+        # Enable CORS
+        http.cors.enabled: true
+        http.cors.allow-origin: "*"
+        http.cors.allow-methods: OPTIONS, HEAD, GET, POST, PUT, DELETE
+        http.cors.allow-headers: X-Requested-With,X-Auth-Token,Content-Type, Content-Length
+
+        # Backup
+        path.repo: ["/backup"]
+
+        # Disable disk-based shard allocation
+        cluster.routing.allocation.disk.threshold_enabled: false
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm-elasticsearch
+spec:
+  ports:
+  - name: "9200"
+    port: 9200
+    targetPort: 9200
+  - name: "9300"
+    port: 9300
+    targetPort: 9300
+  selector:
+    elastest-service: edm-elasticsearch
+  type: ClusterIP

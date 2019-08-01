@@ -1,0 +1,27 @@
+#---
+#apiVersion: v1
+#kind: PersistentVolumeClaim
+#metadata:
+#  name: edm-cerebro-conf
+#spec:
+#  storageClassName: faster
+#  accessModes:
+#  - ReadWriteOnce
+#  resources:
+#    requests:
+#      storage: 1Gi
+#status: {}
+#
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: edm-cerebro-logs
+spec:
+  storageClassName: faster
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+status: {}

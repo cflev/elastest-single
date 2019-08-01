@@ -1,0 +1,150 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: edm-edfs-nn-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: edm-edfs-dn-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: edm-hadoop-hdfs-dn
+spec:
+  serviceName: edm-hadoop-hdfs-dn
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        elastest-service: hadoop-dn
+    spec:
+      containers:
+      - name: hdfs-dn
+        image: "danisla/hadoop:2.9.0"
+        command:
+           - "/bin/bash"
+           - "/tmp/hadoop-config/bootstrap.sh"
+           - "-d"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 50075
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 50075
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        volumeMounts:
+        - name: hadoop-config
+          mountPath: /tmp/hadoop-config
+        - name: edm-edfs-dn
+          mountPath: /root/hdfs/datanode
+      volumes:
+      - name: edm-edfs-dn
+        persistentVolumeClaim:
+          claimName: edm-edfs-dn-pvc
+      - name: hadoop-config
+        configMap:
+          name: edm-hadoop
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm-hadoop-hdfs-dn
+spec:
+  ports:
+  - name: dfs
+    port: 9000
+    protocol: TCP
+  - name: webhdfs
+    port: 50075
+  clusterIP: None
+  selector:
+    elastest-service: hadoop-dn
+
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: edm-hadoop-hdfs-nn
+spec:
+  serviceName: edm-hadoop-hdfs-nn
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        elastest-service: hadoop-nn
+    spec:
+      containers:
+      - name: hdfs-nn
+        image: "danisla/hadoop:2.9.0"
+        command:
+        - "/bin/bash"
+        - "/tmp/hadoop-config/bootstrap.sh"
+        - "-d"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 50070
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 50070
+          initialDelaySeconds: 10
+          timeoutSeconds: 2
+        volumeMounts:
+        - name: hadoop-config
+          mountPath: /tmp/hadoop-config
+        - name: edm-edfs-nn
+          mountPath: /root/hdfs/namenode
+      volumes:
+      - name: hadoop-config
+        configMap:
+          name: edm-hadoop
+      - name: edm-edfs-nn
+        persistentVolumeClaim:
+          claimName: edm-edfs-nn-pvc
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+#  name: edm-hadoop-hdfs-nn
+  name: edm-hdfs-namenode
+spec:
+  ports:
+  - name: dfs
+    port: 9000
+    protocol: TCP
+  - name: webhdfs
+    port: 50070
+  clusterIP: None
+  selector:
+    elastest-service: hadoop-nn
+    

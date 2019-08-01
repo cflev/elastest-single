@@ -1,0 +1,41 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: edm-cerebro
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        elastest-service: edm-cerebro
+    spec:
+      securityContext:
+        fsGroup: 65533
+      containers:
+      - env:
+        - name: ELASTICSEARCH_HOST
+          value: http://edm-elasticsearch:9200
+        image: flevotomos/elastest-edm-cerebro:latest
+        name: edm-cerebro
+        volumeMounts:
+        - mountPath: /srv/cerebro/logs
+          name: edm-cerebro-logs
+      volumes:
+      - name: edm-cerebro-logs
+        persistentVolumeClaim:
+          claimName: edm-cerebro-logs
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm-cerebro
+spec:
+  ports:
+  - name: "9400"
+    port: 9400
+    targetPort: 9400
+  selector:
+    elastest-service: edm-cerebro
+  type: ClusterIP

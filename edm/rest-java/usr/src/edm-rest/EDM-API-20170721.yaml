@@ -1,0 +1,242 @@
+swagger: '2.0'
+info:
+  description: 'EDM :: Elastest Data Manager'
+  version: 1.0.0
+  title: Elastest EDM API
+  termsOfService: 'http://swagger.io/terms/'
+  contact:
+    email: aafent@gmail.com
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+host: elastest.io
+basePath: /edm
+schemes:
+  - http
+tags:
+  - name: DataIO
+    description: >-
+      Backup, restore (import, export) operations. Platform data as well as SuT
+      (System's Under Test) data
+    externalDocs:
+      description: Find out more
+      url: 'http://elastest.io/docs/'
+paths:
+  /backup:
+    get:
+      tags:
+        - DataIO
+      summary: Backup all data from the EDM and EBS modules
+      description: >-
+        Backup and create a gzipped tarball with all data for both EDM and EBS
+        modules. Please, notice that EDM and EBS modules are containing all
+        platforms data.
+      operationId: createBackup
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Successful
+          schema:
+            $ref: '#/definitions/fileObject'
+        '405':
+          description: Invalid input
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/error'
+    post:
+      tags:
+        - DataIO
+      summary: Restore all data for the platform
+      description: >-
+        Download and restore the gzipped tarball with all data for the platform.
+        All existing will be overrided.
+      operationId: restoreBackup
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: 'Information about compressed tarball, containing the sut data'
+          required: true
+          schema:
+            $ref: '#/definitions/fileObject'
+      responses:
+        '200':
+          description: Successful Post
+        '405':
+          description: Invalid input
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /sut:
+    get:
+      tags:
+        - DataIO
+      summary: Retrieve a list with installed SuTs on EDM
+      description: >-
+        Retrieve a list with Systems Under Test, installed on the EDM. This call
+        will return all SuTs that have been created on the persistence layer
+      operationId: retrieveAllSut
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/sutsResponse'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  '/sut/{sut}':
+    get:
+      tags:
+        - DataIO
+      summary: Backup all data for a specific SuT
+      description: Backup and get a gzipped tarball with all data for a specific SuT
+      operationId: backupSutWithId
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: sut
+          in: path
+          description: The id code of the SuT
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successful
+          schema:
+            $ref: '#/definitions/fileObject'
+        '400':
+          description: Invalid SuT supplied or SuT not found
+        '405':
+          description: Invalid input
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/error'
+    post:
+      tags:
+        - DataIO
+      summary: Restore all data for a specific SuT
+      description: >-
+        Download and restore the gzipped tarball with all data for the specific
+        SuT. If the SuT does not exist will be created. If exists will be
+        overrided.
+      operationId: restoreSutWithId
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: 'Information about compressed tarball, containing the sut data'
+          required: true
+          schema:
+            $ref: '#/definitions/fileObject'
+      responses:
+        '200':
+          description: Successful Post
+        '405':
+          description: Invalid input
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/error'
+    delete:
+      tags:
+        - DataIO
+      summary: >-
+        Declare as SuT as unecessary and start the cleansing procedure. All SuT
+        data will be erased.
+      description: >-
+        Declare a SuT as deleted and starting the asynchronous purging
+        procedure.
+      operationId: deleteSutWithId
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: sut
+          in: path
+          description: The id code of the SuT
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successful
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/error'
+definitions:
+  sutsResponse:
+    description: Collection containing SuTs
+    type: array
+    items:
+      type: string
+  error:
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+  fileResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+        example: 6653318
+  fileObject:
+    type: object
+    properties:
+      filesystem:
+        type: string
+        enum:
+          - hdfs
+          - s3
+          - fs
+          - tarball
+        example: s3
+      location:
+        type: string
+        description: >-
+          Can be empty or can contain any valid folder Path. Should start with
+          /. It is recommended to start always with the callers module 3 letters
+          identifier
+        example: /MyModule/MyLocation
+      memberOfSuT:
+        type: string
+        description: Empty or Systems Under Test identification
+      isBigFile:
+        type: boolean
+        example: 'true'
+      bigFileURL:
+        type: string
+        description: >-
+          When is big file, specify the URL for fetching by the EDM or by the
+          Caller
+        example: 'http://example.com/files/file001.dmp'
+      content:
+        type: string
+        example: Lorem ipsum dolor sit amet
+externalDocs:
+  description: Find out more about Swagger
+  url: 'http://swagger.io'

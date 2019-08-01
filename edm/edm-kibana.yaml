@@ -1,0 +1,63 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: edm-kibana
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        elastest-service: edm-kibana
+    spec:
+      containers:
+      - env:
+        - name: ES_JAVA_OPTS
+          value: -Xmx256m -Xms256m
+        - name: discovery.type
+          value: zen
+        - name: discovery.zen.ping.unicast.hosts
+          value: edm-elasticsearch
+        image: docker.elastic.co/kibana/kibana-oss:6.2.4
+        name: edm-kibana
+        resources: {}
+        volumeMounts:
+        - mountPath: /usr/share/kibana/config/kibana.yml
+          name: edm-kibana-config
+          subPath: kibana.yml
+      volumes:
+      - name: edm-kibana-config
+        configMap:
+          name: edm-kibana-config
+
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  edm-kibana-config
+data:
+    kibana.yml: |
+      ---
+      server.name: edm-kibana
+      server.host: "0"
+      #elasticsearch.hosts: http://edm-elasticsearch:9200
+      elasticsearch.url: http://edm-elasticsearch:9200
+
+      ## Disable X-Pack
+      #xpack.monitoring.ui.container.elasticsearch.enabled: false
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edm-kibana
+spec:
+  ports:
+  - name: "5601"
+    port: 5601
+    targetPort: 5601
+  selector:
+    elastest-service: edm-kibana
+  type: ClusterIP

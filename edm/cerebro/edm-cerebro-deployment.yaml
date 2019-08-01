@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  generation: 1
+  labels:
+    chart: edm-cerebro-0.0.1
+  name: edm-cerebro
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: edm-cerebro
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: edm-cerebro
+    spec:
+      containers:
+      - env:
+        - name: ELASTICSEARCH_HOST
+          value: http://edm-elasticsearch:9200
+        image: flevotomos/elastest-edm-cerebro:latest
+        imagePullPolicy: IfNotPresent
+        name: edm-cerebro
+        volumeMounts:
+        - mountPath: /srv/cerebro/logs
+          name: edm-cerebro-logs
+        ports:
+        - containerPort: 9400
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+      volumes:
+      - name: edm-cerebro-logs
+        persistentVolumeClaim:
+          claimName: edm-cerebro-logs
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
