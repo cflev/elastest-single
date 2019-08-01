@@ -20,6 +20,14 @@ or
 echo "--allow-privileged=true" >> /var/snap/microk8s/current/args/kube-apiserver
 ```
 Reboot or restart microk8s services
+```
+microk8s.stop && microk8s.start
+```
+
+Enable storage
+```
+microk8s.enable storage
+```
 
 Create a new namespace
 ```
