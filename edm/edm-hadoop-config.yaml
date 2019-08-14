@@ -96,7 +96,7 @@ data:
     <configuration>
       <property>
             <name>fs.defaultFS</name>
-            <value>hdfs://edm-hadoop-nodename:9000/</value>
+            <value>hdfs://edm-hdfs-namenode:9000/</value>
             <description>NameNode URI</description>
         </property>
     </configuration>

@@ -62,6 +62,7 @@ kubectl delete namespaces elatest-single
 ```
 Test it:
 ```
+kubectl exec -ti svc/sparkmaster bash
 git clone https://github.com/elastest/demo-projects.git
 cd demo-projects/ebs-test
 mvn -q package
