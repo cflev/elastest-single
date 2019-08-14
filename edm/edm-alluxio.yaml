@@ -8,7 +8,7 @@ data:
 
       ALLUXIO_MASTER_HOSTNAME=edm-alluxio-master
       ALLUXIO_MASTER_JOURNAL_FOLDER=/journal
-      ALLUXIO_UNDERFS_ADDRESS=hdfs://edm-hdfs-nodename:9000
+      ALLUXIO_UNDERFS_ADDRESS=hdfs://edm-hdfs-namenode:9000
       ALLUXIO_WORKER_DATA_SERVER_DOMAIN_SOCKET_ADDRESS=/opt/domain/d
       ALLUXIO_WORKER_MEMORY_SIZE=1GB
 
@@ -27,9 +27,10 @@ data:
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: edm-edm-alluxio-journal-volume
+  name: edm-alluxio-journal-volume
   labels:
     type: local
+    service: alluxio-journal
 spec:
 #  storageClassName: standard
   capacity:
@@ -37,7 +38,7 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/tmp/data"
+    path: "/tmp/alluxio"
 
 #---
 #apiVersion: v1
@@ -82,6 +83,10 @@ spec:
   resources:
     requests:
       storage: 1Gi
+  selector:
+    matchLabels:
+      type: local
+      service: alluxio-journal
 
 ---
 apiVersion: apps/v1beta1
