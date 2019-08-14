@@ -1,4 +1,21 @@
 ---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: edm-mysql-pv
+  labels:
+    type: local
+    service: mysql
+spec:
+#  storageClassName: standard
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/data/mysql"
+
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -10,6 +27,28 @@ spec:
   resources:
     requests:
       storage: 5Gi
+  selector:
+    matchLabels:
+      type: local
+      service: mysql
+
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: edm-es-pv
+  labels:
+    type: local
+    service: elastic
+spec:
+#  storageClassName: standard
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/data/es"
 
 
 ---
@@ -24,6 +63,10 @@ spec:
   resources:
     requests:
       storage: 5Gi
+  selector:
+    matchLabels:
+      type: local
+      service: elastic
 
 
 ---
@@ -38,7 +81,27 @@ spec:
   resources:
     requests:
       storage: 5Gi
+  selector:
+    matchLabels:
+      type: local
+      service: elastic-backup
 
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: edm-es-backup-pv
+  labels:
+    type: local
+    service: elastic-backup
+spec:
+#  storageClassName: standard
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/data/es-backup"
 
 ## Cerebro conf
 #---
@@ -56,6 +119,22 @@ spec:
 #
 ## cerebro logs
 
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: edm-cerebro-pv
+  labels:
+    type: local
+    service: cerebro
+spec:
+#  storageClassName: standard
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/data/cerebro"
 
 ---
 apiVersion: v1
@@ -69,3 +148,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
+  selector:
+    matchLabels:
+      type: local
+      service: cerebro

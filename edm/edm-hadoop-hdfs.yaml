@@ -1,4 +1,21 @@
 ---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: edm-hdfs-nn-pv
+  labels:
+    type: local
+    service: hdfs-nn
+spec:
+#  storageClassName: standard
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/tmp/data/hdfs-nn"
+
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,6 +26,27 @@ spec:
   resources:
     requests:
       storage: 1Gi
+  selector:
+    matchLabels:
+      type: local
+      service: hdfs-nn
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: edm-hdfs-dn-pv
+  labels:
+    type: local
+    service: hdfs-dn
+spec:
+#  storageClassName: standard
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/tmp/data/hdfs-dn"
 
 ---
 apiVersion: v1
@@ -21,6 +59,10 @@ spec:
   resources:
     requests:
       storage: 1Gi
+  selector:
+    matchLabels:
+      type: local
+      service: hdfs-dn
 
 
 ---
