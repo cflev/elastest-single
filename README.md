@@ -46,7 +46,7 @@ kubectl apply -f edm-volumes.yaml -f edm-mysql.yaml -f edm-elasticsearch.yaml -f
 ```
 8a. change permissions for elastic search service
 ```
-chown 1000 /tmp/data/es
+chown 1000:1000 /tmp/data/es
 ```
 9. go to ebs directory and run all yaml files:
 ```
