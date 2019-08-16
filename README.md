@@ -44,6 +44,10 @@ kubens elatest
 ```
 kubectl apply -f edm-volumes.yaml -f edm-mysql.yaml -f edm-elasticsearch.yaml -f edm-hadoop-config.yaml -f edm-hadoop-yarn.yaml -f edm-hadoop-hdfs.yaml -f edm-kibana.yaml -f edm-cerebro.yaml -f edm-alluxio.yaml -f edm.yaml
 ```
+8a. change permissions for elastic search service
+```
+chown 1000 /tmp/data/es
+```
 9. go to ebs directory and run all yaml files:
 ```
 kubectl apply -f ebs-sparkmaster.yaml -f ebs-sparkworker.yaml -f restapi.yaml
